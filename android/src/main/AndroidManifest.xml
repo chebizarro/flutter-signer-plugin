@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	package="biz.nostr.signer_plugin">
+	<queries>
+		<intent>
+			<action android:name="android.intent.action.VIEW" />
+			<category android:name="android.intent.category.BROWSABLE" />
+			<data android:scheme="nostrsigner" />
+		</intent>
+	</queries>
+</manifest>
