@@ -22,6 +22,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 	/// when the Flutter Engine is detached from the Activity
 	private MethodChannel channel;
 	private ActivityResultLauncher<Intent> intentLauncher;
+	private String signerPackageName;
 
 	@Override
 	public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
