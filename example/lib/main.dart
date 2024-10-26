@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:signer_plugin/signer_plugin.dart';
 
 void main() {
@@ -16,7 +15,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
+  String _publicKey = 'Unknown';
+  String _signature = 'Unknown';
   final _signerPlugin = SignerPlugin();
 
   @override
@@ -27,23 +27,37 @@ class _MyAppState extends State<MyApp> {
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
+    String publicKey;
+    String signature;
+
     try {
-      platformVersion =
-          await _signerPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
+      // Set package name if needed
+      await _signerPlugin.setPackageName('com.example.signerapp');
+
+      // Check if signer is installed
+      bool isInstalled = await _signerPlugin.isExternalSignerInstalled('com.example.signerapp');
+      if (isInstalled) {
+        // Get public key
+        Map<String, dynamic> pubKeyResult = await _signerPlugin.getPublicKey();
+        publicKey = pubKeyResult['npub'];
+
+        // Sign event
+        Map<String, dynamic> signResult = await _signerPlugin.signEvent('{"content":"Hello Nostr"}', 'event123', publicKey);
+        signature = signResult['signature'];
+      } else {
+        publicKey = 'Signer app not installed';
+        signature = 'Cannot sign event';
+      }
+    } catch (e) {
+      publicKey = 'Error: $e';
+      signature = 'Error: $e';
     }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
     if (!mounted) return;
 
     setState(() {
-      _platformVersion = platformVersion;
+      _publicKey = publicKey;
+      _signature = signature;
     });
   }
 
@@ -51,11 +65,17 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
+        appBar: AppBar(title: const Text('Nostr Signer Plugin Example')),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Public Key: $_publicKey\n'),
+                Text('Signature: $_signature\n'),
+              ],
+            ),
+          ),
         ),
       ),
     );
