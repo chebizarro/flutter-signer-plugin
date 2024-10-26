@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:signer_plugin/signer_app_info.dart';
 import 'dart:async';
 
 import 'package:signer_plugin/signer_plugin.dart';
@@ -17,12 +18,30 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String _publicKey = 'Unknown';
   String _signature = 'Unknown';
+  List<SignerAppInfo> signerApps = [];
+
   final _signerPlugin = SignerPlugin();
 
   @override
   void initState() {
     super.initState();
+    loadSignerApps();
     initPlatformState();
+  }
+
+  Future<void> loadSignerApps() async {
+    List<SignerAppInfo> apps = [];
+    try {
+      apps = await _signerPlugin.getInstalledSignerApps();
+    } catch (e) {
+      print('Error: $e');
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      signerApps = apps;
+    });
   }
 
   // Platform messages are asynchronous, so we initialize in an async method.
@@ -35,14 +54,16 @@ class _MyAppState extends State<MyApp> {
       await _signerPlugin.setPackageName('com.example.signerapp');
 
       // Check if signer is installed
-      bool isInstalled = await _signerPlugin.isExternalSignerInstalled('com.example.signerapp');
+      bool isInstalled = await _signerPlugin
+          .isExternalSignerInstalled('com.example.signerapp');
       if (isInstalled) {
         // Get public key
         Map<String, dynamic> pubKeyResult = await _signerPlugin.getPublicKey();
         publicKey = pubKeyResult['npub'];
 
         // Sign event
-        Map<String, dynamic> signResult = await _signerPlugin.signEvent('{"content":"Hello Nostr"}', 'event123', publicKey);
+        Map<String, dynamic> signResult = await _signerPlugin.signEvent(
+            '{"content":"Hello Nostr"}', 'event123', publicKey);
         signature = signResult['signature'];
       } else {
         publicKey = 'Signer app not installed';
@@ -71,6 +92,21 @@ class _MyAppState extends State<MyApp> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                ListView.builder(
+                  itemCount: signerApps.length,
+                  itemBuilder: (context, index) {
+                    final app = signerApps[index];
+                    return ListTile(
+                      leading:
+                          Image.memory(app.iconData, width: 40, height: 40),
+                      title: Text(app.name),
+                      subtitle: Text(app.packageName),
+                      onTap: () {
+                        // Handle tap event
+                      },
+                    );
+                  },
+                ),
                 Text('Public Key: $_publicKey\n'),
                 Text('Signature: $_signature\n'),
               ],

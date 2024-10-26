@@ -1,7 +1,9 @@
+import 'dart:typed_data';
+
 class SignerAppInfo {
   final String name;
   final String packageName;
-  final String iconData;
+  final Uint8List iconData;
 
   SignerAppInfo({
     required this.name,

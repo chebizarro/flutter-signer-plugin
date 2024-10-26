@@ -57,8 +57,7 @@ class SignerPlugin {
     return SignerPluginPlatform.instance.decryptZapEvent(eventJson, id, npub);
   }
 
-  Future<Map<String, dynamic>> getRelays(
-      String eventJson, String id, String npub) {
-    return SignerPluginPlatform.instance.getRelays(eventJson, id, npub);
+  Future<Map<String, dynamic>> getRelays(String id, String npub) {
+    return SignerPluginPlatform.instance.getRelays(id, npub);
   }
 }
