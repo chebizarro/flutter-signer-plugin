@@ -1,19 +1,37 @@
 package biz.nostr.signer_plugin;
 
+import android.os.Bundle;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ResolveInfo;
+
+import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 
-import biz.nostr.nip55.Signer;
-import biz.nostr.nip55.IntentBuilder;
-import biz.nostr.nip55.AppInfo;
+import biz.nostr.android.nip55.Signer;
+import biz.nostr.android.nip55.IntentBuilder;
+import biz.nostr.android.nip55.AppInfo;
 
 /** SignerPlugin */
-public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
+public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware {
 	/// The MethodChannel that will the communication between Flutter and native
 	/// Android
 	///
@@ -21,8 +39,11 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 	/// and unregister it
 	/// when the Flutter Engine is detached from the Activity
 	private MethodChannel channel;
-	private ActivityResultLauncher<Intent> intentLauncher;
-	private String signerPackageName;
+	private ActivityResultLauncher<Intent> activityResultLauncher;
+	private String signerPackageName = null;
+    private Context context;
+    private Activity activity;
+    private MethodChannel.Result pendingResult;
 
 	@Override
 	public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
@@ -30,7 +51,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 
 		if (activity instanceof ComponentActivity) {
 			ComponentActivity componentActivity = (ComponentActivity) activity;
-			intentLauncher = componentActivity.registerForActivityResult(
+			activityResultLauncher = componentActivity.registerForActivityResult(
 					new ActivityResultContracts.StartActivityForResult(),
 					new ActivityResultCallback<ActivityResult>() {
 						@Override
@@ -44,10 +65,24 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 	}
 
 	@Override
+    public void onDetachedFromActivity() {
+        activity = null;
+        activityResultLauncher = null;
+    }
+
+	@Override
 	public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
+        this.context = flutterPluginBinding.getApplicationContext();
 		channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "signer_plugin");
 		channel.setMethodCallHandler(this);
 	}
+
+	@Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        channel.setMethodCallHandler(null);
+        channel = null;
+        context = null;
+    }
 
 	@Override
 	public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
@@ -92,8 +127,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 	private void isExternalSignerInstalled(MethodCall call, MethodChannel.Result result) {
 		String packageName = call.argument("packageName");
 		List<ResolveInfo> signers = Signer.isExternalSignerInstalled(context, packageName);
-		boolean isInstalled = !signers.isEmpty();
-		result.success(isInstalled);
+		result.success(!signers.isEmpty());
 	}
 
 	private void getInstalledSignerApps(MethodCall call, MethodChannel.Result result) {
@@ -180,21 +214,20 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 	private void nip04Encrypt(MethodCall call, MethodChannel.Result result) {
 		String packageName = getPackageName(call);
 		if (packageName == null || packageName.isEmpty()) {
-			result.error("Signer package name not set. Call setPackageName first.");
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
 			return;
 		}
-		String encryptedText = call.argument("plainText");
+		String plainText = call.argument("plainText");
 		String pubKey = call.argument("pubKey");
 		String npub = call.argument("npub");
 		String id = call.argument("id");
 
-		if (encryptedText == null || pubKey == null || npub == null) {
-			result.error("Missing parameters");
+		if (plainText == null || pubKey == null || npub == null) {
+			result.error("ERROR", "Missing parameters", null);
 			return;
 		}
 
-		Context context = getContext();
-		String decryptedText = Signer.nip04Encrypt(context, packageName, plainText, pubKey, npub);
+		String encryptedText = Signer.nip04Encrypt(context, packageName, plainText, pubKey, npub);
 		if (encryptedText != null) {
 			java.util.Map<String, Object> ret = new java.util.HashMap<>();
 			ret.put("result", encryptedText);
@@ -210,21 +243,20 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 	private void nip44Encrypt(MethodCall call, MethodChannel.Result result) {
 		String packageName = getPackageName(call);
 		if (packageName == null || packageName.isEmpty()) {
-			result.error("Signer package name not set. Call setPackageName first.");
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
 			return;
 		}
-		String encryptedText = call.argument("plainText");
+		String plainText = call.argument("plainText");
 		String pubKey = call.argument("pubKey");
 		String npub = call.argument("npub");
 		String id = call.argument("id");
 
-		if (encryptedText == null || pubKey == null || npub == null) {
-			result.error("Missing parameters");
+		if (plainText == null || pubKey == null || npub == null) {
+			result.error("ERROR", "Missing parameters", null);
 			return;
 		}
 
-		Context context = getContext();
-		String decryptedText = Signer.nip44Encrypt(context, packageName, plainText, pubKey, npub);
+		String encryptedText = Signer.nip44Encrypt(context, packageName, plainText, pubKey, npub);
 		if (encryptedText != null) {
 			java.util.Map<String, Object> ret = new java.util.HashMap<>();
 			ret.put("result", encryptedText);
@@ -240,7 +272,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 	public void nip04Decrypt(MethodCall call, MethodChannel.Result result) {
 		String packageName = getPackageName(call);
 		if (packageName == null || packageName.isEmpty()) {
-			result.error("Signer package name not set. Call setPackageName first.");
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
 			return;
 		}
 		String encryptedText = call.argument("encryptedText");
@@ -249,11 +281,10 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 		String id = call.argument("id");
 
 		if (encryptedText == null || pubKey == null || npub == null) {
-			call.reject("Missing parameters");
+			result.error("ERROR", "Missing parameters", null);
 			return;
 		}
 
-		Context context = getContext();
 		String decryptedText = Signer.nip04Decrypt(context, packageName, encryptedText, pubKey, npub);
 		if (decryptedText != null) {
 			java.util.Map<String, Object> ret = new java.util.HashMap<>();
@@ -261,7 +292,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 			ret.put("id", id);
 			result.success(ret);
 		} else {
-			Intent intent = IntentBuilder.nip04DecryptIntent(packageName, encryptedText, pubKey, npub);
+			Intent intent = IntentBuilder.nip04DecryptIntent(packageName, encryptedText, id, pubKey, npub);
 			pendingResult = result;
 			activityResultLauncher.launch(intent);
 		}
@@ -270,7 +301,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 	public void nip44Decrypt(MethodCall call, MethodChannel.Result result) {
 		String packageName = getPackageName(call);
 		if (packageName == null || packageName.isEmpty()) {
-			result.error("Signer package name not set. Call setPackageName first.");
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
 			return;
 		}
 		String encryptedText = call.argument("encryptedText");
@@ -279,11 +310,10 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 		String id = call.argument("id");
 
 		if (encryptedText == null || pubKey == null || npub == null) {
-			result.error("Missing parameters");
+			result.error("ERROR", "Missing parameters", null);
 			return;
 		}
 
-		Context context = getContext();
 		String decryptedText = Signer.nip44Decrypt(context, packageName, encryptedText, pubKey, npub);
 		if (decryptedText != null) {
 			java.util.Map<String, Object> ret = new java.util.HashMap<>();
@@ -291,7 +321,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 			ret.put("id", id);
 			result.success(ret);
 		} else {
-			Intent intent = IntentBuilder.nip44DecryptIntent(packageName, encryptedText, pubKey, npub);
+			Intent intent = IntentBuilder.nip44DecryptIntent(packageName, encryptedText, id, pubKey, npub);
 			pendingResult = result;
 			activityResultLauncher.launch(intent);
 		}
@@ -300,7 +330,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 	public void decryptZapEvent(MethodCall call, MethodChannel.Result result) {
 		String packageName = getPackageName(call);
 		if (packageName == null || packageName.isEmpty()) {
-			result.error("Signer package name not set. Call setPackageName first.");
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
 			return;
 		}
 
@@ -309,19 +339,18 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 		String id = call.argument("id");
 
 		if (eventJson == null || npub == null) {
-			result.error("Missing parameters");
+			result.error("ERROR", "Missing parameters", null);
 			return;
 		}
 
-		Context context = getContext();
-		String decryptedEventJson = implementation.decryptZapEvent(context, packageName, eventJson, npub);
+		String decryptedEventJson = Signer.decryptZapEvent(context, packageName, eventJson, npub);
 		if (decryptedEventJson != null) {
 			java.util.Map<String, Object> ret = new java.util.HashMap<>();
 			ret.put("result", decryptedEventJson);
 			ret.put("id", id);
 			result.success(ret);
 		} else {
-			Intent intent = IntentBuilder.decryptZapEventIntent();
+			Intent intent = IntentBuilder.decryptZapEventIntent(signerPackageName, eventJson, id, npub);
 			pendingResult = result;
 			activityResultLauncher.launch(intent);
 		}
@@ -330,7 +359,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 	public void getRelays(MethodCall call, MethodChannel.Result result) {
 		String packageName = getPackageName(call);
 		if (packageName == null || packageName.isEmpty()) {
-			result.error("Signer package name not set. Call setPackageName first.");
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
 			return;
 		}
 
@@ -338,12 +367,11 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 		String id = call.argument("id");
 
 		if (npub == null) {
-			result.error("Missing parameters");
+			result.error("ERROR", "Missing parameters", null);
 			return;
 		}
 
-		Context context = getContext();
-		String relayJson = implementation.getRelays(context, packageName, npub);
+		String relayJson = Signer.getRelays(context, packageName, npub);
 		if (relayJson != null) {
 			java.util.Map<String, Object> ret = new java.util.HashMap<>();
 			ret.put("result", relayJson);
@@ -374,9 +402,14 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler {
 		}
 	}
 
-	@Override
-	public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-		channel.setMethodCallHandler(null);
-	}
+    @Override
+    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+        onAttachedToActivity(binding);
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+        onDetachedFromActivity();
+    }
 
 }

@@ -33,6 +33,7 @@ class _MyAppState extends State<MyApp> {
     List<SignerAppInfo> apps = [];
     try {
       apps = await _signerPlugin.getInstalledSignerApps();
+      print("No. of apps: " + apps.length.toString());
     } catch (e) {
       print('Error: $e');
     }
@@ -56,6 +57,8 @@ class _MyAppState extends State<MyApp> {
       // Check if signer is installed
       bool isInstalled = await _signerPlugin
           .isExternalSignerInstalled('com.example.signerapp');
+
+      isInstalled = signerApps.isNotEmpty;
       if (isInstalled) {
         // Get public key
         Map<String, dynamic> pubKeyResult = await _signerPlugin.getPublicKey();
@@ -92,21 +95,6 @@ class _MyAppState extends State<MyApp> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ListView.builder(
-                  itemCount: signerApps.length,
-                  itemBuilder: (context, index) {
-                    final app = signerApps[index];
-                    return ListTile(
-                      leading:
-                          Image.memory(app.iconData, width: 40, height: 40),
-                      title: Text(app.name),
-                      subtitle: Text(app.packageName),
-                      onTap: () {
-                        // Handle tap event
-                      },
-                    );
-                  },
-                ),
                 Text('Public Key: $_publicKey\n'),
                 Text('Signature: $_signature\n'),
               ],

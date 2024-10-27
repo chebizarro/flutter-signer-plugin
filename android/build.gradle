@@ -5,6 +5,7 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url "https://jitpack.io" }
     }
 
     dependencies {
@@ -13,9 +14,11 @@ buildscript {
 }
 
 rootProject.allprojects {
+
     repositories {
         google()
         mavenCentral()
+        maven { url "https://jitpack.io" }
     }
 }
 
@@ -38,6 +41,8 @@ android {
     }
 
     dependencies {
+        implementation("androidx.activity:activity:1.9.3")
+		implementation("com.github.chebizarro:NostrAndroid:5f4ce2e96d")
         testImplementation("junit:junit:4.13.2")
         testImplementation("org.mockito:mockito-core:5.0.0")
     }

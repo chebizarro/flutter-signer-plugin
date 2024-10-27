@@ -28,3 +28,12 @@ migrate_working_dir/
 **/doc/api/
 .dart_tool/
 build/
+
+.gradle
+gradle
+/local.properties
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties

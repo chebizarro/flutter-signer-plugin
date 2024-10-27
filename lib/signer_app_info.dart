@@ -3,7 +3,7 @@ import 'dart:typed_data';
 class SignerAppInfo {
   final String name;
   final String packageName;
-  final Uint8List iconData;
+  final String iconData;
 
   SignerAppInfo({
     required this.name,

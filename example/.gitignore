@@ -41,3 +41,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+*.iml
+.gradle
+gradle
+/local.properties
+.DS_Store
+/captures
+.externalNativeBuild
+.cxx
+local.properties
