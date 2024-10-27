@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Intent;
 
 import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
 
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 

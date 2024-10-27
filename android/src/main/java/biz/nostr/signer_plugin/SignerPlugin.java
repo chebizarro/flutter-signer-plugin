@@ -7,13 +7,8 @@ import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.util.Log;
 
-import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.fragment.app.FragmentActivity;
 
 import java.util.List;
 import java.util.Map;
@@ -44,8 +39,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 	private String signerPackageName = null;
 	private Context context;
 	private Activity activity;
-	//private MethodChannel.Result pendingResult;
-	private static String TAG = "SignerPlugin";
+	private static final String TAG = "SignerPlugin";
 
 	@Override
 	public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {

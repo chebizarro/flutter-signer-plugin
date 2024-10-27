@@ -1,21 +1,15 @@
 package biz.nostr.signer_plugin;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ResolveInfo;
-import android.os.Bundle;
-import android.util.Log;
 
 import java.util.Map;
 import java.util.HashMap;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentActivity;
 
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
