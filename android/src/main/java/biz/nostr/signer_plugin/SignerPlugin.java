@@ -1,11 +1,11 @@
 package biz.nostr.signer_plugin;
 
-import android.os.Bundle;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
+import android.os.Bundle;
+import android.util.Log;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResult;
@@ -13,6 +13,7 @@ import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentActivity;
 
 import java.util.List;
 import java.util.Map;
@@ -39,39 +40,33 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 	/// and unregister it
 	/// when the Flutter Engine is detached from the Activity
 	private MethodChannel channel;
-	private ActivityResultLauncher<Intent> activityResultLauncher;
+	private ActivityResultHandler activityResultHandler;
 	private String signerPackageName = null;
 	private Context context;
 	private Activity activity;
-	private MethodChannel.Result pendingResult;
+	//private MethodChannel.Result pendingResult;
+	private static String TAG = "SignerPlugin";
 
 	@Override
 	public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+		Log.d(TAG, "onAttachedToActivity called");
 		this.activity = binding.getActivity();
-
-		if (activity instanceof ComponentActivity) {
-			ComponentActivity componentActivity = (ComponentActivity) activity;
-			activityResultLauncher = componentActivity.registerForActivityResult(
-					new ActivityResultContracts.StartActivityForResult(),
-					new ActivityResultCallback<ActivityResult>() {
-						@Override
-						public void onActivityResult(ActivityResult result) {
-							handleActivityResult(result);
-						}
-					});
-		} else {
-			// Fallback or error handling
-		}
+		activityResultHandler = new DefaultActivityResultHandler();
+		activityResultHandler.init(activity, binding);
 	}
 
 	@Override
 	public void onDetachedFromActivity() {
-		activity = null;
-		activityResultLauncher = null;
+		if (activityResultHandler != null) {
+			activityResultHandler.dispose();
+			activityResultHandler = null;
+		}
+		this.activity = null;
 	}
 
 	@Override
 	public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
+		Log.d(TAG, "onAttachedToEngine called");
 		this.context = flutterPluginBinding.getApplicationContext();
 		channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "signer_plugin");
 		channel.setMethodCallHandler(this);
@@ -79,6 +74,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 
 	@Override
 	public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+		Log.d(TAG, "onDetachedFromEngine called");
 		channel.setMethodCallHandler(null);
 		channel = null;
 		context = null;
@@ -177,9 +173,9 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 		} else {
 			String permissions = call.argument("permissions");
 			Intent intent = IntentBuilder.getPublicKeyIntent(packageName, permissions);
-			// Store the result to be used in onActivityResult
-			pendingResult = result;
-			activityResultLauncher.launch(intent);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result);
+			});
 		}
 	}
 
@@ -206,8 +202,9 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			result.success(ret);
 		} else {
 			Intent intent = IntentBuilder.signEventIntent(packageName, eventJson, eventId, npub);
-			pendingResult = result;
-			activityResultLauncher.launch(intent);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result);
+			});
 		}
 	}
 
@@ -235,8 +232,9 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			result.success(ret);
 		} else {
 			Intent intent = IntentBuilder.nip04EncryptIntent(packageName, plainText, id, npub, pubKey);
-			pendingResult = result;
-			activityResultLauncher.launch(intent);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result);
+			});
 		}
 	}
 
@@ -264,8 +262,9 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			result.success(ret);
 		} else {
 			Intent intent = IntentBuilder.nip04EncryptIntent(packageName, plainText, id, npub, pubKey);
-			pendingResult = result;
-			activityResultLauncher.launch(intent);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result);
+			});
 		}
 	}
 
@@ -293,8 +292,9 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			result.success(ret);
 		} else {
 			Intent intent = IntentBuilder.nip04DecryptIntent(packageName, encryptedText, id, pubKey, npub);
-			pendingResult = result;
-			activityResultLauncher.launch(intent);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result);
+			});
 		}
 	}
 
@@ -322,8 +322,9 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			result.success(ret);
 		} else {
 			Intent intent = IntentBuilder.nip44DecryptIntent(packageName, encryptedText, id, pubKey, npub);
-			pendingResult = result;
-			activityResultLauncher.launch(intent);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result);
+			});
 		}
 	}
 
@@ -351,8 +352,9 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			result.success(ret);
 		} else {
 			Intent intent = IntentBuilder.decryptZapEventIntent(signerPackageName, eventJson, id, npub);
-			pendingResult = result;
-			activityResultLauncher.launch(intent);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result);
+			});
 		}
 	}
 
@@ -379,13 +381,14 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			result.success(ret);
 		} else {
 			Intent intent = IntentBuilder.getRelaysIntent(signerPackageName, id, npub);
-			pendingResult = result;
-			activityResultLauncher.launch(intent);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result);
+			});
 		}
 	}
 
-	private void handleActivityResult(ActivityResult result) {
-		Intent data = result.getData();
+	private void handleActivityResult(ActivityResult activityResult, MethodChannel.Result result) {
+		Intent data = activityResult.getData();
 		if (data != null) {
 			Bundle extras = data.getExtras();
 			Map<String, Object> resultData = new HashMap<>();
@@ -395,20 +398,21 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 					resultData.put(key, value);
 				}
 			}
-			// Send resultData back to Dart
-			pendingResult.success(resultData);
+			result.success(resultData);
 		} else {
-			pendingResult.error("NO_DATA", "No data returned from activity.", null);
+			result.error("NO_DATA", "No data returned from activity.", null);
 		}
 	}
 
 	@Override
 	public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+		Log.d(TAG, "onReattachedToActivityForConfigChanges called");
 		onAttachedToActivity(binding);
 	}
 
 	@Override
 	public void onDetachedFromActivityForConfigChanges() {
+		Log.d(TAG, "onDetachedFromActivityForConfigChanges called");
 		onDetachedFromActivity();
 	}
 
