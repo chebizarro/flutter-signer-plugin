@@ -41,9 +41,9 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 	private MethodChannel channel;
 	private ActivityResultLauncher<Intent> activityResultLauncher;
 	private String signerPackageName = null;
-    private Context context;
-    private Activity activity;
-    private MethodChannel.Result pendingResult;
+	private Context context;
+	private Activity activity;
+	private MethodChannel.Result pendingResult;
 
 	@Override
 	public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
@@ -65,24 +65,24 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 	}
 
 	@Override
-    public void onDetachedFromActivity() {
-        activity = null;
-        activityResultLauncher = null;
-    }
+	public void onDetachedFromActivity() {
+		activity = null;
+		activityResultLauncher = null;
+	}
 
 	@Override
 	public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-        this.context = flutterPluginBinding.getApplicationContext();
+		this.context = flutterPluginBinding.getApplicationContext();
 		channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "signer_plugin");
 		channel.setMethodCallHandler(this);
 	}
 
 	@Override
-    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
-        channel.setMethodCallHandler(null);
-        channel = null;
-        context = null;
-    }
+	public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+		channel.setMethodCallHandler(null);
+		channel = null;
+		context = null;
+	}
 
 	@Override
 	public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
@@ -402,14 +402,14 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 		}
 	}
 
-    @Override
-    public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-        onAttachedToActivity(binding);
-    }
+	@Override
+	public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+		onAttachedToActivity(binding);
+	}
 
-    @Override
-    public void onDetachedFromActivityForConfigChanges() {
-        onDetachedFromActivity();
-    }
+	@Override
+	public void onDetachedFromActivityForConfigChanges() {
+		onDetachedFromActivity();
+	}
 
 }
