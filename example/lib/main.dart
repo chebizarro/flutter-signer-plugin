@@ -4,6 +4,8 @@ import 'dart:convert';
 
 import 'package:signer_plugin/signer_plugin.dart';
 import 'package:signer_plugin/signer_app_info.dart';
+import 'package:bech32/bech32.dart';
+import 'package:hex/hex.dart';
 
 void main() {
   runApp(const MyApp());
@@ -101,6 +103,7 @@ class _MyAppState extends State<MyApp> {
         'content': eventContentController.text,
         'tags': [],
         'pubkey': pubKeyHex,
+        'sig': '',
       };
 
       String eventHash = getEventHash(event);
@@ -293,5 +296,49 @@ String getEventHash(Map<String, dynamic> event) {
 }
 
 String decodeNpub(String publicKey) {
-  return publicKey;
+  var decodedKey = decode(publicKey);
+  return decodedKey;
+}
+
+// "Borrowed" from NDK
+String decode(String npub) {
+  try {
+    var decoder = Bech32Decoder();
+    var bech32Result = decoder.convert(npub);
+    var data = convertBits(bech32Result.data, 5, 8, false);
+    return HEX.encode(data);
+  } catch (e) {
+    return "";
+  }
+}
+
+List<int> convertBits(List<int> data, int from, int to, bool pad) {
+  var acc = 0;
+  var bits = 0;
+  var result = <int>[];
+  var maxv = (1 << to) - 1;
+
+  for (var v in data) {
+    if (v < 0 || (v >> from) != 0) {
+      throw Exception();
+    }
+    acc = (acc << from) | v;
+    bits += from;
+    while (bits >= to) {
+      bits -= to;
+      result.add((acc >> bits) & maxv);
+    }
+  }
+
+  if (pad) {
+    if (bits > 0) {
+      result.add((acc << (to - bits)) & maxv);
+    }
+  } else if (bits >= from) {
+    throw InvalidPadding('illegal zero padding');
+  } else if (((acc << (to - bits)) & maxv) != 0) {
+    throw InvalidPadding('non zero');
+  }
+
+  return result;
 }
