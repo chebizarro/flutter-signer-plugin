@@ -106,6 +106,8 @@ Below is a complete example demonstrating how to use the plugin:
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:signer_plugin/signer_plugin.dart';
+import 'package:ndk/shared/nips/nip19/nip19.dart';
+
 
 void main() {
   runApp(MyApp());
@@ -133,7 +135,8 @@ class _MyAppState extends State<MyApp> {
     try {
       publicKey = await SignerPlugin.getPublicKey();
       String eventJson = '{"content": "Hello, Nostr!"}';
-      signedEvent = await SignerPlugin.signEvent(eventJson);
+	  String pk = Nip19.decode(publicKey);
+      signedEvent = await SignerPlugin.signEvent(eventJson, pk);
     } catch (e) {
       publicKey = 'Failed to get public key: $e';
       signedEvent = 'Failed to sign event: $e';
