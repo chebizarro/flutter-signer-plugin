@@ -10,13 +10,6 @@ class MethodChannelSignerPlugin extends SignerPluginPlatform {
   @visibleForTesting
   final methodChannel = const MethodChannel('signer_plugin');
 
-  @override
-  Future<String?> getPlatformVersion() async {
-    final version =
-        await methodChannel.invokeMethod<String>('getPlatformVersion');
-    return version;
-  }
-
   // Check if an external signer is installed
   @override
   Future<bool> isExternalSignerInstalled(String packageName) async {

@@ -3,10 +3,6 @@ import 'package:signer_plugin/signer_app_info.dart';
 import 'signer_plugin_platform_interface.dart';
 
 class SignerPlugin {
-  Future<String?> getPlatformVersion() {
-    return SignerPluginPlatform.instance.getPlatformVersion();
-  }
-
   Future<bool> isExternalSignerInstalled(String packageName) {
     return SignerPluginPlatform.instance.isExternalSignerInstalled(packageName);
   }
