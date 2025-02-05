@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:signer_plugin/signer_plugin.dart';
-import 'package:signer_plugin/signer_app_info.dart';
+import 'package:nip55/signer_plugin.dart';
+import 'package:nip55/signer_app_info.dart';
 import 'package:bech32/bech32.dart';
 import 'package:hex/hex.dart';
 

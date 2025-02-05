@@ -1,4 +1,4 @@
-package biz.nostr.signer_plugin;
+package biz.nostr.flutter.signer;
 
 import android.app.Activity;
 import android.content.Context;
@@ -27,7 +27,7 @@ import biz.nostr.android.nip55.IntentBuilder;
 import biz.nostr.android.nip55.AppInfo;
 
 /** SignerPlugin */
-public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware {
+public class Nip55SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityAware {
 	/// The MethodChannel that will the communication between Flutter and native
 	/// Android
 	///
@@ -39,7 +39,8 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 	private String signerPackageName = null;
 	private Context context;
 	private Activity activity;
-	private static final String TAG = "SignerPlugin";
+	private static final String TAG = "Nip55SignerPlugin";
+	private static final String CHANNEL_NAME = "nip55_signer_plugin";
 
 	@Override
 	public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
@@ -62,7 +63,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 	public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
 		Log.d(TAG, "onAttachedToEngine called");
 		this.context = flutterPluginBinding.getApplicationContext();
-		channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "signer_plugin");
+		channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), CHANNEL_NAME);
 		channel.setMethodCallHandler(this);
 	}
 

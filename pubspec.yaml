@@ -1,6 +1,6 @@
-name: signer_plugin
-description: A Flutter plugin for Nostr Signer integration
-version: 0.0.1
+name: nip55
+description: A Flutter plugin for Nostr NIP-55 Signer integration
+version: 0.0.2
 homepage:
 
 environment:
@@ -15,7 +15,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -35,8 +35,8 @@ flutter:
   plugin:
     platforms:
       android:
-        package: biz.nostr.signer_plugin
-        pluginClass: SignerPlugin
+        package: biz.nostr.flutter.signer
+        pluginClass: Nip55SignerPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

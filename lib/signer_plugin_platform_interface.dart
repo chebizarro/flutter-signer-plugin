@@ -1,5 +1,5 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:signer_plugin/signer_app_info.dart';
+import 'package:nip55/signer_app_info.dart';
 
 import 'signer_plugin_method_channel.dart';
 

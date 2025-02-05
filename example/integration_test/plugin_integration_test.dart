@@ -10,16 +10,37 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import 'package:signer_plugin/signer_plugin.dart';
+import 'package:nip55/signer_plugin.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final plugin = SignerPlugin();
 
-  testWidgets('getPlatformVersion test', (WidgetTester tester) async {
-    final SignerPlugin plugin = SignerPlugin();
-    final String? version = await plugin.getPlatformVersion();
-    // The version string depends on the host platform running the test, so
-    // just assert that some non-empty string is returned.
-    expect(version?.isNotEmpty, true);
+  testWidgets('getPublicKey real test', (WidgetTester tester) async {
+    // Attempt to call the actual native method
+    try {
+      final result = await plugin.getPublicKey(
+        permissions: '[{"type":"sign_event"}]',
+      );
+      print('Got public key: $result');
+      expect(result.containsKey('npub'), isTrue);
+    } catch (e) {
+      fail('getPublicKey failed: $e');
+    }
   });
+
+  testWidgets('signEvent real test', (WidgetTester tester) async {
+    try {
+      final result = await plugin.signEvent(
+        '{"content":"Hello"}',
+        'evt123',
+        'npubUser',
+      );
+      print('Signed event: $result');
+      expect(result['signature'], isNotNull);
+    } catch (e) {
+      fail('signEvent failed: $e');
+    }
+  });
+
 }

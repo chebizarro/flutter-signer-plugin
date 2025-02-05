@@ -1,4 +1,4 @@
-package biz.nostr.signer_plugin;
+package biz.nostr.flutter.signer;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -18,7 +18,7 @@ import org.junit.Test;
 public class SignerPluginTest {
   @Test
   public void onMethodCall_getPlatformVersion_returnsExpectedValue() {
-    SignerPlugin plugin = new SignerPlugin();
+    Nip55SignerPlugin plugin = new Nip55SignerPlugin();
 
     final MethodCall call = new MethodCall("getPlatformVersion", null);
     MethodChannel.Result mockResult = mock(MethodChannel.Result.class);

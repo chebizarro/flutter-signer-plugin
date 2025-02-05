@@ -1,4 +1,4 @@
-package biz.nostr.signer_plugin;
+package biz.nostr.flutter.signer;
 
 import android.app.Activity;
 import android.content.Intent;

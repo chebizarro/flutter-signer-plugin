@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:signer_plugin/signer_app_info.dart';
+import 'package:nip55/signer_app_info.dart';
 
 import 'signer_plugin_platform_interface.dart';
 
@@ -8,7 +8,7 @@ import 'signer_plugin_platform_interface.dart';
 class MethodChannelSignerPlugin extends SignerPluginPlatform {
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  final methodChannel = const MethodChannel('signer_plugin');
+  final methodChannel = const MethodChannel('nip55_signer_plugin');
 
   // Check if an external signer is installed
   @override

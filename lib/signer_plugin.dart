@@ -1,4 +1,4 @@
-import 'package:signer_plugin/signer_app_info.dart';
+import 'package:nip55/signer_app_info.dart';
 
 import 'signer_plugin_platform_interface.dart';
 
