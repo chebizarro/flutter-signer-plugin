@@ -30,6 +30,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   bech32: ^0.2.2
   hex: ^0.2.0
+  logger: ^2.5.0
 
 dev_dependencies:
   integration_test:

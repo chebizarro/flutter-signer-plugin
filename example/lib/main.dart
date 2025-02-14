@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -31,6 +32,7 @@ class _MyAppState extends State<MyApp> {
   List<SignerAppInfo> signerApps = [];
   bool isScriptActive = false;
   dynamic relays;
+  final logger = Logger();
 
   final _signerPlugin = SignerPlugin();
 
@@ -48,9 +50,9 @@ class _MyAppState extends State<MyApp> {
     List<SignerAppInfo> apps = [];
     try {
       apps = await _signerPlugin.getInstalledSignerApps();
-      print("No. of apps: ${apps.length}");
+      logger.i("No. of apps: ${apps.length}");
     } catch (e) {
-      print('Error: $e');
+      logger.e('Error: $e');
     }
 
     if (!mounted) return;
@@ -75,7 +77,7 @@ class _MyAppState extends State<MyApp> {
         signerInstalled = installed;
       });
     } catch (e) {
-      print('Error checking signer installation: $e');
+      logger.e('Error checking signer installation: $e');
       setState(() {
         signerInstalled = false;
       });
@@ -89,7 +91,7 @@ class _MyAppState extends State<MyApp> {
         publicKey = pubKeyResult['npub'];
       });
     } catch (e) {
-      print('Error getting public key: $e');
+      logger.e('Error getting public key: $e');
     }
   }
 
@@ -119,7 +121,7 @@ class _MyAppState extends State<MyApp> {
         signedEvent = signResult['event'];
       });
     } catch (e) {
-      print('Error signing event: $e');
+      logger.e('Error signing event: $e');
     }
   }
 
@@ -142,7 +144,7 @@ class _MyAppState extends State<MyApp> {
         encryptedMessage = result['result'];
       });
     } catch (e) {
-      print('Error encrypting message: $e');
+      logger.e('Error encrypting message: $e');
     }
   }
 
@@ -163,7 +165,7 @@ class _MyAppState extends State<MyApp> {
         decryptedMessage = result['result'];
       });
     } catch (e) {
-      print('Error decrypting message: $e');
+      logger.e('Error decrypting message: $e');
     }
   }
 
@@ -174,7 +176,7 @@ class _MyAppState extends State<MyApp> {
         relays = result['result'];
       });
     } catch (e) {
-      print('Error fetching relays: $e');
+      logger.e('Error fetching relays: $e');
     }
   }
 
@@ -198,7 +200,7 @@ class _MyAppState extends State<MyApp> {
                     itemBuilder: (context, index) {
                       final app = signerApps[index];
                       return ListTile(
-                        //leading: Image.memory(app.icon),
+                        leading: Image.memory(utf8.encoder.convert(app.iconData)),
                         title: Text(app.name),
                         onTap: () => selectSignerApp(app),
                       );
