@@ -1,6 +1,6 @@
 name: signer_plugin
 description: A Flutter plugin for Nostr Signer integration
-version: 0.0.1
+version: 0.0.2
 homepage:
 
 environment:
