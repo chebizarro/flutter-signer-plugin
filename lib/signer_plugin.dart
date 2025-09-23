@@ -1,6 +1,8 @@
 import 'dart:io' show Platform;
+import 'dart:convert';
 import 'package:signer_plugin/signer_app_info.dart';
 import 'package:signer_plugin/nip55_exceptions.dart';
+import 'package:signer_plugin/nip55_permission.dart';
 
 import 'signer_plugin_platform_interface.dart';
 
@@ -44,6 +46,21 @@ class SignerPlugin {
     if (permissions != null) _checkSize(permissions, 'permissions');
     return SignerPluginPlatform.instance.getPublicKey(permissions)
         .timeout(defaultTimeout);
+  }
+
+  /// Convenience: build compact permissions JSON from a list of [Permission]
+  /// and call getPublicKey with it. If [permissions] is empty or null, no
+  /// extra is passed.
+  Future<Map<String, dynamic>> getPublicKeyWithPermissions(
+      {List<Permission>? permissions}) {
+    _ensureAndroid();
+    String? json;
+    if (permissions != null && permissions.isNotEmpty) {
+      final list = permissions.map((p) => p.toJson()).toList(growable: false);
+      json = jsonEncode(list);
+      _checkSize(json, 'permissions');
+    }
+    return getPublicKey(permissions: json);
   }
 
   Future<Map<String, dynamic>> signEvent(

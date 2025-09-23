@@ -174,220 +174,210 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			});
 		}
 	}
-            return;
-        }
-        String publicKey = Signer.getPublicKey(context, packageName);
-        if (publicKey != null) {
-            java.util.Map<String, Object> ret = new java.util.HashMap<>();
-            ret.put("npub", publicKey);
-            ret.put("package", packageName);
-            result.success(ret);
-        } else {
-            String permissions = call.argument("permissions");
-            Intent intent = IntentBuilder.getPublicKeyIntent(packageName, permissions);
-            activityResultHandler.launch(intent, activityResult -> {
-                handleActivityResult(activityResult, result, (data) -> {
-                    // Expect extras: npub, package
-                    return data;
-                });
-            });
-        }
-    }
 
-    private void signEvent(MethodCall call, MethodChannel.Result result) {
-        String packageName = getPackageName(call);
-        if (packageName == null || packageName.isEmpty()) {
-            result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
-            return;
-        }
-        String eventJson = call.argument("eventJson");
-        String eventId = call.argument("eventId");
-        String npub = call.argument("npub");
+	private void signEvent(MethodCall call, MethodChannel.Result result) {
+		String packageName = getPackageName(call);
+		if (packageName == null || packageName.isEmpty()) {
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
+			return;
+		}
+		String eventJson = call.argument("eventJson");
+		String eventId = call.argument("eventId");
+		String npub = call.argument("npub");
 
-        if (eventJson == null || eventId == null || npub == null) {
-            result.error("ERROR", "Missing parameters", null);
-            return;
-        }
-        String[] signedEventJson = Signer.signEvent(context, packageName, eventJson, npub);
-        if (signedEventJson != null) {
-            java.util.Map<String, Object> ret = new java.util.HashMap<>();
-            ret.put("signature", signedEventJson[0]);
-            ret.put("id", eventId);
-            ret.put("event", signedEventJson[1]);
-            result.success(ret);
-        } else {
-            Intent intent = IntentBuilder.signEventIntent(packageName, eventJson, eventId, npub);
-            activityResultHandler.launch(intent, activityResult -> {
-                handleActivityResult(activityResult, result, (data) -> {
-                    // Compat: prefer signature/event, fallback to result
-                    if (!data.containsKey("signature") && data.containsKey("result")) {
-                        data.put("signature", data.get("result"));
-                    }
-                    return data;
-                });
-            });
-        }
-    }
+		if (eventJson == null || eventId == null || npub == null) {
+			result.error("ERROR", "Missing parameters", null);
+			return;
+		}
+		String[] signedEventJson = Signer.signEvent(context, packageName, eventJson, npub);
+		if (signedEventJson != null) {
+			java.util.Map<String, Object> ret = new java.util.HashMap<>();
+			ret.put("signature", signedEventJson[0]);
+			ret.put("id", eventId);
+			ret.put("event", signedEventJson[1]);
+			result.success(ret);
+		} else {
+			Intent intent = IntentBuilder.signEventIntent(packageName, eventJson, eventId, npub);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result, (data) -> {
+					if (!data.containsKey("signature") && data.containsKey("result")) {
+						data.put("signature", data.get("result"));
+					}
+					return data;
+				});
+			});
+		}
+	}
 
-    private void nip04Encrypt(MethodCall call, MethodChannel.Result result) {
-        String packageName = getPackageName(call);
-        if (packageName == null || packageName.isEmpty()) {
-            result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
-            return;
-        }
-        String plainText = call.argument("plainText");
-        String pubKey = call.argument("pubKey");
-        String npub = call.argument("npub");
-        String id = call.argument("id");
+	private void nip04Encrypt(MethodCall call, MethodChannel.Result result) {
+		String packageName = getPackageName(call);
+		if (packageName == null || packageName.isEmpty()) {
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
+			return;
+		}
+		String plainText = call.argument("plainText");
+		String pubKey = call.argument("pubKey");
+		String npub = call.argument("npub");
+		String id = call.argument("id");
 
-        if (plainText == null || pubKey == null || npub == null) {
-            result.error("ERROR", "Missing parameters", null);
-            return;
-        }
+		if (plainText == null || pubKey == null || npub == null) {
+			result.error("ERROR", "Missing parameters", null);
+			return;
+		}
 
-        String encryptedText = Signer.nip04Encrypt(context, packageName, plainText, pubKey, npub);
-        if (encryptedText != null) {
-            java.util.Map<String, Object> ret = new java.util.HashMap<>();
-            ret.put("result", encryptedText);
-            ret.put("id", id);
-            result.success(ret);
-        } else {
-            Intent intent = IntentBuilder.nip04EncryptIntent(packageName, plainText, id, npub, pubKey);
-            activityResultHandler.launch(intent, activityResult -> {
-                handleActivityResult(activityResult, result, (data) -> data);
-            });
-        }
-    }
+		String encryptedText = Signer.nip04Encrypt(context, packageName, plainText, pubKey, npub);
+		if (encryptedText != null) {
+			java.util.Map<String, Object> ret = new java.util.HashMap<>();
+			ret.put("result", encryptedText);
+			ret.put("id", id);
+			result.success(ret);
+		} else {
+			Intent intent = IntentBuilder.nip04EncryptIntent(packageName, plainText, id, npub, pubKey);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result, (data) -> {
+					if (!data.containsKey("result") && data.containsKey("encrypted")) {
+						data.put("result", data.get("encrypted"));
+					}
+					return data;
+				});
+			});
+		}
+	}
 
-    private void nip44Encrypt(MethodCall call, MethodChannel.Result result) {
-        String packageName = getPackageName(call);
-        if (packageName == null || packageName.isEmpty()) {
-            result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
-            return;
-        }
-        String plainText = call.argument("plainText");
-        String pubKey = call.argument("pubKey");
-        String npub = call.argument("npub");
-        String id = call.argument("id");
+	private void nip44Encrypt(MethodCall call, MethodChannel.Result result) {
+		String packageName = getPackageName(call);
+		if (packageName == null || packageName.isEmpty()) {
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
+			return;
+		}
+		String plainText = call.argument("plainText");
+		String pubKey = call.argument("pubKey");
+		String npub = call.argument("npub");
+		String id = call.argument("id");
 
-        if (plainText == null || pubKey == null || npub == null) {
-            result.error("ERROR", "Missing parameters", null);
-            return;
-        }
+		if (plainText == null || pubKey == null || npub == null) {
+			result.error("ERROR", "Missing parameters", null);
+			return;
+		}
 
-        String encryptedText = Signer.nip44Encrypt(context, packageName, plainText, pubKey, npub);
-        if (encryptedText != null) {
-            java.util.Map<String, Object> ret = new java.util.HashMap<>();
-            ret.put("result", encryptedText);
-            ret.put("id", id);
-            result.success(ret);
-        } else {
-            Intent intent = IntentBuilder.nip44EncryptIntent(packageName, plainText, id, npub, pubKey);
-            activityResultHandler.launch(intent, activityResult -> {
-                handleActivityResult(activityResult, result, (data) -> data);
-            });
-        }
-    }
+		String encryptedText = Signer.nip44Encrypt(context, packageName, plainText, pubKey, npub);
+		if (encryptedText != null) {
+			java.util.Map<String, Object> ret = new java.util.HashMap<>();
+			ret.put("result", encryptedText);
+			ret.put("id", id);
+			result.success(ret);
+		} else {
+			Intent intent = IntentBuilder.nip44EncryptIntent(packageName, plainText, id, npub, pubKey);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result, (data) -> data);
+			});
+		}
+	}
 
-    public void nip04Decrypt(MethodCall call, MethodChannel.Result result) {
-        String packageName = getPackageName(call);
-        if (packageName == null || packageName.isEmpty()) {
-            result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
-            return;
-        }
-        String encryptedText = call.argument("encryptedText");
-        String pubKey = call.argument("pubKey");
-        String npub = call.argument("npub");
-        String id = call.argument("id");
+	public void nip04Decrypt(MethodCall call, MethodChannel.Result result) {
+		String packageName = getPackageName(call);
+		if (packageName == null || packageName.isEmpty()) {
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
+			return;
+		}
+		String encryptedText = call.argument("encryptedText");
+		String pubKey = call.argument("pubKey");
+		String npub = call.argument("npub");
+		String id = call.argument("id");
 
-        if (encryptedText == null || pubKey == null || npub == null) {
-            result.error("ERROR", "Missing parameters", null);
-            return;
-        }
+		if (encryptedText == null || pubKey == null || npub == null) {
+			result.error("ERROR", "Missing parameters", null);
+			return;
+		}
 
-        String decryptedText = Signer.nip04Decrypt(context, packageName, encryptedText, pubKey, npub);
-        if (decryptedText != null) {
-            java.util.Map<String, Object> ret = new java.util.HashMap<>();
-            ret.put("result", decryptedText);
-            ret.put("id", id);
-            result.success(ret);
-        } else {
-            Intent intent = IntentBuilder.nip04DecryptIntent(packageName, encryptedText, id, pubKey, npub);
-            activityResultHandler.launch(intent, activityResult -> {
-                handleActivityResult(activityResult, result, (data) -> data);
-            });
-        }
-    }
+		String decryptedText = Signer.nip04Decrypt(context, packageName, encryptedText, pubKey, npub);
+		if (decryptedText != null) {
+			java.util.Map<String, Object> ret = new java.util.HashMap<>();
+			ret.put("result", decryptedText);
+			ret.put("id", id);
+			result.success(ret);
+		} else {
+			Intent intent = IntentBuilder.nip04DecryptIntent(packageName, encryptedText, id, pubKey, npub);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result, (data) -> data);
+			});
+		}
+	}
 
-    public void nip44Decrypt(MethodCall call, MethodChannel.Result result) {
-        String packageName = getPackageName(call);
-        if (packageName == null || packageName.isEmpty()) {
-            result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
-            return;
-        }
-        String encryptedText = call.argument("encryptedText");
-        String pubKey = call.argument("pubKey");
-        String npub = call.argument("npub");
-        String id = call.argument("id");
+	public void nip44Decrypt(MethodCall call, MethodChannel.Result result) {
+		String packageName = getPackageName(call);
+		if (packageName == null || packageName.isEmpty()) {
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
+			return;
+		}
+		String encryptedText = call.argument("encryptedText");
+		String pubKey = call.argument("pubKey");
+		String npub = call.argument("npub");
+		String id = call.argument("id");
 
-        if (encryptedText == null || pubKey == null || npub == null) {
-            result.error("ERROR", "Missing parameters", null);
-            return;
-        }
+		if (encryptedText == null || pubKey == null || npub == null) {
+			result.error("ERROR", "Missing parameters", null);
+			return;
+		}
 
-        String decryptedText = Signer.nip44Decrypt(context, packageName, encryptedText, pubKey, npub);
-        if (decryptedText != null) {
-            java.util.Map<String, Object> ret = new java.util.HashMap<>();
-            ret.put("result", decryptedText);
-            ret.put("id", id);
-            result.success(ret);
-        } else {
-            Intent intent = IntentBuilder.nip44DecryptIntent(packageName, encryptedText, id, pubKey, npub);
-            activityResultHandler.launch(intent, activityResult -> {
-                handleActivityResult(activityResult, result, (data) -> data);
-            });
-        }
-    }
+		String decryptedText = Signer.nip44Decrypt(context, packageName, encryptedText, pubKey, npub);
+		if (decryptedText != null) {
+			java.util.Map<String, Object> ret = new java.util.HashMap<>();
+			ret.put("result", decryptedText);
+			ret.put("id", id);
+			result.success(ret);
+		} else {
+			Intent intent = IntentBuilder.nip44DecryptIntent(packageName, encryptedText, id, pubKey, npub);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result, (data) -> {
+					if (!data.containsKey("result") && data.containsKey("decrypted")) {
+						data.put("result", data.get("decrypted"));
+					}
+					return data;
+				});
+			});
+		}
+	}
 
-    public void decryptZapEvent(MethodCall call, MethodChannel.Result result) {
-        String packageName = getPackageName(call);
-        if (packageName == null || packageName.isEmpty()) {
-            result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
-            return;
-        }
+	public void decryptZapEvent(MethodCall call, MethodChannel.Result result) {
+		String packageName = getPackageName(call);
+		if (packageName == null || packageName.isEmpty()) {
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
+			return;
+		}
 
-        String eventJson = call.argument("eventJson");
-        String npub = call.argument("npub");
-        String id = call.argument("id");
+		String eventJson = call.argument("eventJson");
+		String npub = call.argument("npub");
+		String id = call.argument("id");
 
-        if (eventJson == null || npub == null) {
-            result.error("ERROR", "Missing parameters", null);
-            return;
-        }
+		if (eventJson == null || npub == null) {
+			result.error("ERROR", "Missing parameters", null);
+			return;
+		}
 
-        String decryptedEventJson = Signer.decryptZapEvent(context, packageName, eventJson, npub);
-        if (decryptedEventJson != null) {
-            java.util.Map<String, Object> ret = new java.util.HashMap<>();
-            ret.put("result", decryptedEventJson);
-            ret.put("id", id);
-            result.success(ret);
-        } else {
-            Intent intent = IntentBuilder.decryptZapEventIntent(packageName, eventJson, id, npub);
-            activityResultHandler.launch(intent, activityResult -> {
-                handleActivityResult(activityResult, result, (data) -> data);
-            });
-        }
-    }
+		String decryptedEventJson = Signer.decryptZapEvent(context, packageName, eventJson, npub);
+		if (decryptedEventJson != null) {
+			java.util.Map<String, Object> ret = new java.util.HashMap<>();
+			ret.put("result", decryptedEventJson);
+			ret.put("id", id);
+			result.success(ret);
+		} else {
+			Intent intent = IntentBuilder.decryptZapEventIntent(packageName, eventJson, id, npub);
+			activityResultHandler.launch(intent, activityResult -> {
+				handleActivityResult(activityResult, result, (data) -> data);
+			});
+		}
+	}
 
-    public void getRelays(MethodCall call, MethodChannel.Result result) {
-        String packageName = getPackageName(call);
-        if (packageName == null || packageName.isEmpty()) {
-            result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
-            return;
-        }
+	public void getRelays(MethodCall call, MethodChannel.Result result) {
+		String packageName = getPackageName(call);
+		if (packageName == null || packageName.isEmpty()) {
+			result.error("ERROR", "Signer package name not set. Call setPackageName first.", null);
+			return;
+		}
 
-        String npub = call.argument("npub");
-        String id = call.argument("id");
+		String npub = call.argument("npub");
+		String id = call.argument("id");
 
         if (npub == null) {
             result.error("ERROR", "Missing parameters", null);
