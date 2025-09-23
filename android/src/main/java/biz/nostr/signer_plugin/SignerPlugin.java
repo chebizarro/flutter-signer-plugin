@@ -103,8 +103,10 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 				break;
 			case "nip44Decrypt":
 				nip44Decrypt(call, result);
+				break;
 			case "decryptZapEvent":
 				decryptZapEvent(call, result);
+				break;
 			case "getRelays":
 				getRelays(call, result);
 				break;
@@ -165,7 +167,10 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			String permissions = call.argument("permissions");
 			Intent intent = IntentBuilder.getPublicKeyIntent(packageName, permissions);
 			activityResultHandler.launch(intent, activityResult -> {
-				handleActivityResult(activityResult, result);
+				handleActivityResult(activityResult, result, (data) -> {
+					// Expect extras: npub, package
+					return data;
+				});
 			});
 		}
 	}
@@ -194,7 +199,12 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 		} else {
 			Intent intent = IntentBuilder.signEventIntent(packageName, eventJson, eventId, npub);
 			activityResultHandler.launch(intent, activityResult -> {
-				handleActivityResult(activityResult, result);
+				handleActivityResult(activityResult, result, (data) -> {
+					if (!data.containsKey("signature") && data.containsKey("result")) {
+						data.put("signature", data.get("result"));
+					}
+					return data;
+				});
 			});
 		}
 	}
@@ -224,7 +234,12 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 		} else {
 			Intent intent = IntentBuilder.nip04EncryptIntent(packageName, plainText, id, npub, pubKey);
 			activityResultHandler.launch(intent, activityResult -> {
-				handleActivityResult(activityResult, result);
+				handleActivityResult(activityResult, result, (data) -> {
+					if (!data.containsKey("result") && data.containsKey("encrypted")) {
+						data.put("result", data.get("encrypted"));
+					}
+					return data;
+				});
 			});
 		}
 	}
@@ -252,9 +267,9 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			ret.put("id", id);
 			result.success(ret);
 		} else {
-			Intent intent = IntentBuilder.nip04EncryptIntent(packageName, plainText, id, npub, pubKey);
+			Intent intent = IntentBuilder.nip44EncryptIntent(packageName, plainText, id, npub, pubKey);
 			activityResultHandler.launch(intent, activityResult -> {
-				handleActivityResult(activityResult, result);
+				handleActivityResult(activityResult, result, (data) -> data);
 			});
 		}
 	}
@@ -284,7 +299,7 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 		} else {
 			Intent intent = IntentBuilder.nip04DecryptIntent(packageName, encryptedText, id, pubKey, npub);
 			activityResultHandler.launch(intent, activityResult -> {
-				handleActivityResult(activityResult, result);
+				handleActivityResult(activityResult, result, (data) -> data);
 			});
 		}
 	}
@@ -314,7 +329,12 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 		} else {
 			Intent intent = IntentBuilder.nip44DecryptIntent(packageName, encryptedText, id, pubKey, npub);
 			activityResultHandler.launch(intent, activityResult -> {
-				handleActivityResult(activityResult, result);
+				handleActivityResult(activityResult, result, (data) -> {
+					if (!data.containsKey("result") && data.containsKey("decrypted")) {
+						data.put("result", data.get("decrypted"));
+					}
+					return data;
+				});
 			});
 		}
 	}
@@ -342,9 +362,9 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			ret.put("id", id);
 			result.success(ret);
 		} else {
-			Intent intent = IntentBuilder.decryptZapEventIntent(signerPackageName, eventJson, id, npub);
+			Intent intent = IntentBuilder.decryptZapEventIntent(packageName, eventJson, id, npub);
 			activityResultHandler.launch(intent, activityResult -> {
-				handleActivityResult(activityResult, result);
+				handleActivityResult(activityResult, result, (data) -> data);
 			});
 		}
 	}
@@ -356,50 +376,63 @@ public class SignerPlugin implements FlutterPlugin, MethodCallHandler, ActivityA
 			return;
 		}
 
-		String npub = call.argument("current_user");
+		String npub = call.argument("npub");
 		String id = call.argument("id");
 
-		if (npub == null) {
-			result.error("ERROR", "Missing parameters", null);
-			return;
-		}
+        if (npub == null) {
+            result.error("ERROR", "Missing parameters", null);
+            return;
+        }
 
-		String relayJson = Signer.getRelays(context, packageName, npub);
-		if (relayJson != null) {
-			java.util.Map<String, Object> ret = new java.util.HashMap<>();
-			ret.put("result", relayJson);
-			ret.put("id", id);
-			result.success(ret);
-		} else {
-			Intent intent = IntentBuilder.getRelaysIntent(signerPackageName, id, npub);
-			activityResultHandler.launch(intent, activityResult -> {
-				handleActivityResult(activityResult, result);
-			});
-		}
-	}
+        String relayJson = Signer.getRelays(context, packageName, npub);
+        if (relayJson != null) {
+            java.util.Map<String, Object> ret = new java.util.HashMap<>();
+            ret.put("result", relayJson);
+            ret.put("id", id);
+            result.success(ret);
+        } else {
+            Intent intent = IntentBuilder.getRelaysIntent(packageName, id, npub);
+            activityResultHandler.launch(intent, activityResult -> {
+                handleActivityResult(activityResult, result, (data) -> data);
+            });
+        }
+    }
 
-	private void handleActivityResult(ActivityResult activityResult, MethodChannel.Result result) {
-		Intent data = activityResult.getData();
-		if (data != null) {
-			Bundle extras = data.getExtras();
-			Map<String, Object> resultData = new HashMap<>();
-			if (extras != null) {
-				for (String key : extras.keySet()) {
-					Object value = extras.get(key);
-					resultData.put(key, value);
-				}
-			}
-			result.success(resultData);
-		} else {
-			result.error("NO_DATA", "No data returned from activity.", null);
-		}
-	}
+    private interface MapNormalizer {
+        Map<String, Object> apply(Map<String, Object> data);
+    }
 
-	@Override
-	public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
-		Log.d(TAG, "onReattachedToActivityForConfigChanges called");
-		onAttachedToActivity(binding);
-	}
+    private void handleActivityResult(ActivityResult activityResult, MethodChannel.Result result) {
+        handleActivityResult(activityResult, result, (data) -> data);
+    }
+
+    private void handleActivityResult(ActivityResult activityResult, MethodChannel.Result result, MapNormalizer normalizer) {
+        if (activityResult == null) {
+            result.error("NO_RESULT", "No activity result returned.", null);
+            return;
+        }
+        if (activityResult.getResultCode() == Activity.RESULT_CANCELED) {
+            result.error("CANCELED", "User canceled operation.", null);
+            return;
+        }
+        Intent data = activityResult.getData();
+        if (data == null) {
+            result.error("NO_DATA", "No data returned from activity.", null);
+            return;
+        }
+        Bundle extras = data.getExtras();
+        if (extras == null || extras.isEmpty()) {
+            result.error("MISSING_EXTRAS", "No extras returned from activity.", null);
+            return;
+        }
+        Map<String, Object> resultData = new HashMap<>();
+        for (String key : extras.keySet()) {
+            Object value = extras.get(key);
+            resultData.put(key, value);
+        }
+        Map<String, Object> normalized = normalizer != null ? normalizer.apply(resultData) : resultData;
+        result.success(normalized);
+    }
 
 	@Override
 	public void onDetachedFromActivityForConfigChanges() {

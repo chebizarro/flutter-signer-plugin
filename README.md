@@ -30,7 +30,7 @@ Add the plugin to your project's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  flutter_nostr_signer_plugin: ^1.0.0
+  signer_plugin: ^0.0.2
 ```
 
 Then, run the following command to fetch the plugin:
@@ -60,8 +60,12 @@ final nostrSigner = SignerPlugin();
 Retrieve the user's public key:
 
 ```dart
-String publicKey = await SignerPlugin.getPublicKey();
-print('Public Key: $publicKey');
+final signer = SignerPlugin();
+// Optionally set a preferred signer package once
+await signer.setPackageName('com.example.signer');
+final res = await signer.getPublicKey();
+final publicKey = res['npub'] as String; // bech32 npub
+print('Public Key length: ${publicKey.length}');
 ```
 
 ### Sign Event
@@ -69,108 +73,48 @@ print('Public Key: $publicKey');
 Sign a Nostr event represented as a JSON string:
 
 ```dart
-String eventJson = '{id:"", "content": "Hello, Nostr!", ...}';
-String signedEvent = await FlutterNostrSignerPlugin.signEvent(eventJson);
-print('Signed Event: $signedEvent');
+final signer = SignerPlugin();
+final pubRes = await signer.getPublicKey();
+final npub = pubRes['npub'] as String;
+final eventId = '...computed id...';
+final eventJson = '{"id":"$eventId","kind":1,"content":"Hello","tags":[],"pubkey":"...hex..."}';
+final signRes = await signer.signEvent(eventJson, eventId, npub);
+// keys: signature, id, event
+print('Signed event length: ${signRes['event'].toString().length}');
 ```
 
 ## API Reference
 
-### Methods
+### Methods (Android only)
 
-#### `Future<String> getPublicKey()`
+All methods return `Future<Map<String, dynamic>>` with consistent keys.
 
-Retrieves the user's public key.
+- `getPublicKey({String? permissionsJson})` → `{ npub, package }`
+- `signEvent(String eventJson, String eventId, String npub)` → `{ signature, id, event }`
+- `nip04Encrypt(String plainText, String id, String npub, String pubKey)` → `{ result, id }`
+- `nip04Decrypt(String encryptedText, String id, String npub, String pubKey)` → `{ result, id }`
+- `nip44Encrypt(String plainText, String id, String npub, String pubKey)` → `{ result, id }`
+- `nip44Decrypt(String encryptedText, String id, String npub, String pubKey)` → `{ result, id }`
+- `decryptZapEvent(String eventJson, String id, String npub)` → `{ result, id }`
+- `getRelays(String id, String npub)` → `{ result, id }`
 
-**Returns:**
+Utilities:
 
-- `String`: The public key in hexadecimal format.
-
-#### `Future<String> signEvent(String eventJson)`
-
-Signs a Nostr event.
-
-**Parameters:**
-
-- `eventJson` (`String`): A JSON string representing the event to be signed.
-
-**Returns:**
-
-- `String`: The signed event in JSON format.
+- `setPackageName(String packageName)` sets a preferred signer package used by subsequent calls.
+- `getInstalledSignerApps()` returns installed signers with `{name, packageName, iconData, iconUrl?}`.
+- `isExternalSignerInstalled(String packageName)` returns `bool`.
 
 ## Example
 
-Below is a complete example demonstrating how to use the plugin:
+See `example/` for a runnable app demonstrating:
 
-```dart
-import 'package:flutter/material.dart';
-import 'dart:async';
-import 'package:signer_plugin/signer_plugin.dart';
-import 'package:ndk/shared/nips/nip19/nip19.dart';
+- Listing installed signer apps and selecting one
+- Getting public key
+- Signing an event
+- NIP-04/NIP-44 encrypt/decrypt
+- Getting relays
 
-
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatefulWidget {
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  String _publicKey = 'Unknown';
-  String _signedEvent = 'Unknown';
-
-  @override
-  void initState() {
-    super.initState();
-    initSigner();
-  }
-
-  Future<void> initSigner() async {
-    String publicKey;
-    String signedEvent;
-
-    try {
-      publicKey = await SignerPlugin.getPublicKey();
-      String eventJson = '{"content": "Hello, Nostr!"}';
-	  String pk = Nip19.decode(publicKey);
-      signedEvent = await SignerPlugin.signEvent(eventJson, pk);
-    } catch (e) {
-      publicKey = 'Failed to get public key: $e';
-      signedEvent = 'Failed to sign event: $e';
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      _publicKey = publicKey;
-      _signedEvent = signedEvent;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Flutter Nostr Signer Plugin Example')),
-        body: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Public Key: $_publicKey\n', textAlign: TextAlign.center),
-                Text('Signed Event: $_signedEvent\n', textAlign: TextAlign.center),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-```
+All examples avoid logging sensitive payloads; only lengths are printed.
 
 ## NIP-55 Compliance
 
